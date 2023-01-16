@@ -1,0 +1,19 @@
+[package]
+name = "fjson"
+version = "1.0.0"
+description = "A library for parsing and formatting json with C-style comments and trailing commas"
+authors = ["XXIV"]
+homepage = "https://github.com/thechampagne/libfjson"
+repository = "https://github.com/thechampagne/libfjson"
+readme = "README.md"
+license = "MIT"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "fjson"
+crate-type =["cdylib","staticlib"]
+
+[dependencies]
+fjson = "0.3.0"

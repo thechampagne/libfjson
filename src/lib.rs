@@ -28,7 +28,9 @@ use fjson::to_jsonc;
 
 #[repr(C)]
 #[allow(non_camel_case_types)]
+#[derive(PartialEq)]
 enum fjson_error_t {
+    FJSON_ERROR_OK,
     FJSON_ERROR_RECURSION_LIMIT_EXCEEDED,
     FJSON_ERROR_UNEXPECTED_CHARACTER,
     FJSON_ERROR_UNEXPECTED_TOKEN,
@@ -49,7 +51,10 @@ unsafe extern "C" fn fjson_to_json(input: *const c_char, err_out: *mut fjson_err
     };
     match to_json(input_rs) {
 	Ok(json_str) => match CString::new(json_str) {
-	    Ok(cstr) => cstr.into_raw(),
+	    Ok(cstr) => {
+		(*err_out) = fjson_error_t::FJSON_ERROR_OK;
+		cstr.into_raw()
+	    },
 	    Err(_) => {
 		(*err_out) = fjson_error_t::FJSON_ERROR_NUL;
 		std::ptr::null_mut()
@@ -91,7 +96,10 @@ unsafe extern "C" fn fjson_to_json_compact(input: *const c_char, err_out: *mut f
     };
     match to_json_compact(input_rs) {
 	Ok(json_str) => match CString::new(json_str) {
-	    Ok(cstr) => cstr.into_raw(),
+	    Ok(cstr) => {
+		(*err_out) = fjson_error_t::FJSON_ERROR_OK;
+		cstr.into_raw()
+	    },
 	    Err(_) => {
 		(*err_out) = fjson_error_t::FJSON_ERROR_NUL;
 		std::ptr::null_mut()
@@ -133,7 +141,10 @@ unsafe extern "C" fn fjson_to_jsonc(input: *const c_char, err_out: *mut fjson_er
     };
     match to_jsonc(input_rs) {
 	Ok(json_str) => match CString::new(json_str) {
-	    Ok(cstr) => cstr.into_raw(),
+	    Ok(cstr) => {
+		(*err_out) = fjson_error_t::FJSON_ERROR_OK;
+		cstr.into_raw()
+	    },
 	    Err(_) => {
 		(*err_out) = fjson_error_t::FJSON_ERROR_NUL;
 		std::ptr::null_mut()
@@ -160,6 +171,57 @@ unsafe extern "C" fn fjson_to_jsonc(input: *const c_char, err_out: *mut fjson_er
 		(*err_out) = fjson_error_t::FJSON_ERROR_WRITE;
 		std::ptr::null_mut()
 	    },
+	}
+    }
+}
+
+mod tests {
+
+    use crate::*;
+
+    #[allow(non_upper_case_globals)]
+    const input: &'static str = "// This is a JSON value with comments and trailing commas
+{
+
+    /* The project name is fjson */
+    \"project\": \"fjson\",
+    \"language\": \"Rust\",
+    \"license\": [
+        \"MIT\",
+    ],
+
+
+  // This project is public.
+    \"public\": true,
+}\0";
+
+    #[test]
+    fn to_jsonc() {
+	unsafe {
+	    let mut err: fjson_error_t = fjson_error_t::FJSON_ERROR_OK;
+	    let output = fjson_to_jsonc(input.as_ptr() as *const c_char, &mut err as *mut fjson_error_t);
+	    assert!(err == fjson_error_t::FJSON_ERROR_OK);
+	    assert!(!output.is_null());
+	}
+    }
+
+    #[test]
+    fn to_json() {
+	unsafe {
+	    let mut err: fjson_error_t = fjson_error_t::FJSON_ERROR_OK;
+	    let output = fjson_to_json(input.as_ptr() as *const c_char, &mut err as *mut fjson_error_t);
+	    assert!(err == fjson_error_t::FJSON_ERROR_OK);
+	    assert!(!output.is_null());
+	}
+    }
+
+    #[test]
+    fn to_json_compact() {
+	unsafe {
+	    let mut err: fjson_error_t = fjson_error_t::FJSON_ERROR_OK;
+	    let output = fjson_to_json_compact(input.as_ptr() as *const c_char, &mut err as *mut fjson_error_t);
+	    assert!(err == fjson_error_t::FJSON_ERROR_OK);
+	    assert!(!output.is_null());
 	}
     }
 }
